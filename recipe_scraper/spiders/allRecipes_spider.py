@@ -1,6 +1,6 @@
 import scrapy, re
-from tutorial.items import RecipeItem
-
+from recipe_scraper.items import RecipeItem
+from scrapy import log
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from scrapy.contrib.linkextractors import LinkExtractor
 
@@ -8,36 +8,30 @@ class AllRecipesSpider(CrawlSpider):
     name = "allRecipes"
     allowed_domains = ["allrecipes.com"]
     start_urls = [
-        "http://allrecipes.com/Recipes/Main.aspx",
+        "http://allrecipes.com/recipes/main.aspx?Page=%d#recipes" % i for i in xrange(1,51)
         # "http://allrecipes.com/Recipe/Worlds-Best-Lasagna",
         # "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
     ]
 
-    def filter_links(self, links):
-        baseDomain = self.get_base_domain( self.response_url)
-        filteredLinks = []
-        for link in links:
-            if link.url.find(baseDomain) < 0:
-                filteredLinks.append(link)
-        return filteredLinks
 
     def my_process_value(value):
         m = re.search('recipes/main\.aspx\?Page=\d+', value, re.I)
+
         if m:
-            print value
-            return True
+            print
+            return value
         else:
             return None
 
     rules = (
-    #     # Extract links matching 'category.php' (but not matching 'subsection.php')
-    #     # and follow links from them (since no callback means follow=True by default).
-        Rule(LinkExtractor(allow=(r'.*recipes/main\.aspx\?Page=\d+.*'), unique=True, process_value=my_process_value), callback='parse_page'),
-        Rule(LinkExtractor(allow=(r'.*Detail\.aspx.*', ), unique=True), callback='parse_item')
+        # Extract links matching 'category.php' (but not matching 'subsection.php')
+        # and follow links from them (since no callback means follow=True by default).
+        # Rule(LinkExtractor(process_value=my_process_value, restrict_xpaths=("//div[contains(@class,'page_navigation_nav')]")), callback='parse_page'),
+        Rule(LinkExtractor(allow=(r'.*Detail\.aspx.*1$', ), unique=True), callback='parse_item'),
     )
 
     def parse_item(self, response):
-        # self.log('Hi, this is an item page! %s' % response.url)
+        # self.log.msg('Hi, this is an item page! %s' % response.url, log.DEBUG)
 
         item = RecipeItem()
 
@@ -48,7 +42,8 @@ class AllRecipesSpider(CrawlSpider):
             amount = sel.xpath("span[@id='lblIngAmount']/text()").extract()
             name = sel.xpath("span[@id='lblIngName']/text()").extract()[0]
 
-            ingr[name] = amount
+            if not re.search("nbsp", name) and amount:
+                ingr[name] = amount
             # item['link'] = sel.xpath('a/@href').extract()
             # item['desc'] = sel.xpath('text()').extract()
         item['ingredients'] = ingr
@@ -74,4 +69,5 @@ class AllRecipesSpider(CrawlSpider):
         yield item
 
     def parse_page(self, response):
-        self.log('Hi, this is a page!!!!!!!!!!!!!!!!!!!!!!! %s' % response.url)
+        log.start("log.txt", log.DEBUG, True)
+        log.msg('Hi, this is a page!!!!!!!!!!!!!!!!!!!!!!! %s' % response.url, level=log.DEBUG)
