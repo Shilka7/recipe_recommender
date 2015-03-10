@@ -8,7 +8,7 @@ class AllRecipesSpider(CrawlSpider):
     name = "allRecipes"
     allowed_domains = ["allrecipes.com"]
     start_urls = [
-        "http://allrecipes.com/recipes/main.aspx?Page=%d#recipes" % i for i in xrange(1,51)
+        "http://allrecipes.com/recipes/main.aspx?Page=%d#recipes" % i for i in xrange(1,2)
         # "http://allrecipes.com/Recipe/Worlds-Best-Lasagna",
         # "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
     ]
@@ -65,7 +65,18 @@ class AllRecipesSpider(CrawlSpider):
         for dirSelector in response.xpath("//div[contains(@itemprop,'recipeInstructions')]//li"):
             instrList.append(dirSelector.xpath("span/text()").extract()[0])
 
+
         item['instructions'] = instrList
+
+        nutrition = {}
+        for nutrSelector in response.xpath("//div[contains(@id,'nutritionSummary')]//ul[contains(@id,'ulNutrient')]"):
+            category = nutrSelector.xpath("li[contains(@class,'categories')]/text()").extract()[0]
+            quantity = nutrSelector.xpath("li[contains(@class,'units')]/span/text()").extract()[0] + nutrSelector.xpath("li[contains(@class,'units')]/text()").extract()[0]
+
+            nutrition[category] = quantity
+
+        item['nutrition'] = nutrition
+
         yield item
 
     def parse_page(self, response):

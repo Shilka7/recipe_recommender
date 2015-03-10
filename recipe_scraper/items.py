@@ -15,3 +15,4 @@ class RecipeItem(scrapy.Item):
     cookTime = scrapy.Field()
     totalTime = scrapy.Field()
     instructions = scrapy.Field()
+    nutrition = scrapy.Field()
